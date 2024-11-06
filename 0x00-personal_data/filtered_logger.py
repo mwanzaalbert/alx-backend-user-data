@@ -118,7 +118,7 @@ def format_row(row: Tuple[str, ...], headers: List[str]) -> str:
                                                                   row))
 
 
-def main():
+def main() -> None:
     """
     Retrieve all rows from the users table and log each row with
     sensitive data filtered.
