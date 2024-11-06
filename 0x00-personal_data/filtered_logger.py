@@ -9,6 +9,7 @@ import os
 import logging
 import re
 from typing import List, Tuple
+from datetime import datetime
 import mysql.connector
 from mysql.connector.connection import MySQLConnection
 
@@ -17,7 +18,8 @@ from mysql.connector.connection import MySQLConnection
 PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 
-def filter_datum(fields, redaction, message, separator: str) -> str:
+def filter_datum(fields: List[str], redaction: str, message: str,
+                 separator: str) -> str:
     """Filter data."""
 
     pattern = f"({'|'.join(fields)})=([^;]+)"
@@ -35,7 +37,7 @@ class RedactingFormatter(logging.Formatter):
         super(RedactingFormatter, self).__init__(self.FORMAT)
         self.fields = fields
 
-    def format(self, record) -> str:
+    def format(self, record: logging.LogRecord) -> str:
         record.msg = filter_datum(
             self.fields, self.REDACTION, record.msg, self.SEPARATOR)
         return super(RedactingFormatter, self).format(record)
