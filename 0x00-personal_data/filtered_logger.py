@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-"""
-Filtered logger module
-"""
+"""Filtered logger module."""
 
 import os
 import logging
@@ -15,13 +12,24 @@ from mysql.connector.connection import MySQLConnection
 
 
 # Define the fields that are considered PII
-PII_FIELDS = ("name", "email", "phone", "ssn", "password")
+PII_FIELDS = ["name", "email", "phone", "ssn", "password"]
 
 
 def filter_datum(fields: List[str], redaction: str, message: str,
                  separator: str) -> str:
-    """Filter data."""
+    """
+    Replaces occurrences of fields in a message with the redaction string.
 
+    Args:
+        fields (List[str]): A list representing field names to redact.
+        redaction (str): The string to replace sensitive information with.
+        message (str): The original message containing sensitive information.
+        separator (str): The character separating fields in the message.
+
+    Returns:
+        str: The redacted message.
+    """
+    # pylint: disable=unused-argument
     pattern = f"({'|'.join(fields)})=([^;]+)"
     return re.sub(pattern, lambda m: f"{m.group(1)}={redaction}", message)
 
@@ -34,10 +42,25 @@ class RedactingFormatter(logging.Formatter):
     SEPARATOR = ";"
 
     def __init__(self, fields: List[str]):
+        """
+        Initializes the RedactingFormatter with specified fields.
+
+        Args:
+            fields (List[str]): Fields to redact in log messages.
+        """
         super(RedactingFormatter, self).__init__(self.FORMAT)
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
+        """
+        Applies redaction to sensitive fields in the log record message.
+
+        Args:
+            record (logging.LogRecord): The log record to format.
+
+        Returns:
+            str: The formatted log message with sensitive information redacted.
+        """
         record.msg = filter_datum(
             self.fields, self.REDACTION, record.msg, self.SEPARATOR)
         return super(RedactingFormatter, self).format(record)
@@ -61,6 +84,9 @@ def get_db() -> MySQLConnection:
     """
     Connects to the MySQL database using credentials from environment variables
     and returns the MySQLConnection object.
+
+    Returns:
+        MySQLConnection: The connection to the MySQL database.
     """
     username = os.getenv("PERSONAL_DATA_DB_USERNAME", "root")
     password = os.getenv("PERSONAL_DATA_DB_PASSWORD", "")
@@ -75,9 +101,18 @@ def get_db() -> MySQLConnection:
     )
 
 
-def format_row(row: Tuple[str], headers: List[str]) -> str:
+def format_row(row: Tuple[str, ...], headers: List[str]) -> str:
     """
     Formats a database row into a log message string.
+
+    Args:
+        row (Tuple[str, ...]): A tuple representing a row of data from the
+        database.
+        headers (List[str]): A list of column headers corresponding to the row
+        data.
+
+    Returns:
+        str: A formatted string where each field is 'header=value'.
     """
     return "; ".join(f"{header}={value}" for header, value in zip(headers,
                                                                   row))
@@ -99,7 +134,7 @@ def main():
     for row in cursor:
         message = format_row(row, headers)
         log_record = logging.LogRecord(
-            "user_data", logging.INFO, None, None, message, None, None
+            "user_data", logging.INFO, int, int, message, None, None
         )
         logger.handle(log_record)
 
