@@ -5,14 +5,15 @@
 import os
 import logging
 import re
-from typing import List, Tuple
+from typing import List, Tuple, Union, Any
 from datetime import datetime
 import mysql.connector
-from mysql.connector.connection import MySQLConnection
+# from mysql.connector.connection import (MySQLConnection,
+#                                         MySQLConnectionAbstract)
 
 
 # Define the fields that are considered PII
-PII_FIELDS = ["name", "email", "phone", "ssn", "password"]
+PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 
 def filter_datum(fields: List[str], redaction: str, message: str,
@@ -73,14 +74,14 @@ def get_logger() -> logging.Logger:
     logger.propagate = False
 
     stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(RedactingFormatter(fields=PII_FIELDS))
+    stream_handler.setFormatter(RedactingFormatter(fields=list(PII_FIELDS)))
 
     logger.addHandler(stream_handler)
 
     return logger
 
 
-def get_db() -> MySQLConnection:
+def get_db() -> Any:
     """
     Connects to the MySQL database using credentials from environment variables
     and returns the MySQLConnection object.
@@ -130,12 +131,21 @@ def main() -> None:
     cursor = db.cursor()
     cursor.execute("SELECT * FROM users")
 
-    headers = [i[0] for i in cursor.description]  # Get column names
-    for row in cursor:
-        message = format_row(row, headers)
+    # Get column names
+    headers = [i[0] for i in cursor.description] if cursor.description else []
+    rows = cursor.fetchall()
+    for row in rows:
+        #         message = format_row(row, headers)
+        # Casting row elements to string
+        message = format_row(
+            tuple(str(value) if value is not None else "" for value in row),
+            headers)
+
+#         log_record = logging.LogRecord(
+#             "user_data", logging.INFO, int, int, message, None, None
+#         )
         log_record = logging.LogRecord(
-            "user_data", logging.INFO, int, int, message, None, None
-        )
+            "user_data", logging.INFO, __file__, 0, message, None, None)
         logger.handle(log_record)
 
     cursor.close()
