@@ -8,8 +8,7 @@ import re
 from typing import List, Tuple, Union, Any
 from datetime import datetime
 import mysql.connector
-# from mysql.connector.connection import (MySQLConnection,
-#                                         MySQLConnectionAbstract)
+from mysql.connector.connection import MySQLConnection
 
 
 # Define the fields that are considered PII
@@ -81,7 +80,7 @@ def get_logger() -> logging.Logger:
     return logger
 
 
-def get_db() -> Any:
+def get_db() -> MySQLConnection:
     """
     Connects to the MySQL database using credentials from environment variables
     and returns the MySQLConnection object.
