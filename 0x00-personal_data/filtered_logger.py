@@ -17,18 +17,7 @@ PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 def filter_datum(fields: List[str], redaction: str, message: str,
                  separator: str) -> str:
-    """
-    Replaces occurrences of fields in a message with the redaction string.
-
-    Args:
-        fields (List[str]): A list representing field names to redact.
-        redaction (str): The string to replace sensitive information with.
-        message (str): The original message containing sensitive information.
-        separator (str): The character separating fields in the message.
-
-    Returns:
-        str: The redacted message.
-    """
+    """Replaces occurrences of fields in a msg with the redaction string."""
     # pylint: disable=unused-argument
     pattern = f"({'|'.join(fields)})=([^;]+)"
     return re.sub(pattern, lambda m: f"{m.group(1)}={redaction}", message)
