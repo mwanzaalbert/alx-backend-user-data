@@ -18,7 +18,6 @@ PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 def filter_datum(fields: List[str], redaction: str, message: str,
                  separator: str) -> str:
     """Replaces occurrences of fields in a msg with the redaction string."""
-    # pylint: disable=unused-argument
     pattern = f"({'|'.join(fields)})=([^{separator}]+)"
     return re.sub(pattern, lambda m: f"{m.group(1)}={redaction}", message)
 
@@ -87,6 +86,7 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
                 user=username,
                 password=password,
                 host=host,
+                port=3306,
                 database=database
             )
     except Error:
