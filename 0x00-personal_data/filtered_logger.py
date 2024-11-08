@@ -19,7 +19,7 @@ def filter_datum(fields: List[str], redaction: str, message: str,
                  separator: str) -> str:
     """Replaces occurrences of fields in a msg with the redaction string."""
     # pylint: disable=unused-argument
-    pattern = f"({'|'.join(fields)})=([^;]+)"
+    pattern = f"({'|'.join(fields)})=([^{separator}]+)"
     return re.sub(pattern, lambda m: f"{m.group(1)}={redaction}", message)
 
 
