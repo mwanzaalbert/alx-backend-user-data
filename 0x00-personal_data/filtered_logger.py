@@ -82,13 +82,14 @@ def get_db() -> MySQLConnection:
     username = os.getenv("PERSONAL_DATA_DB_USERNAME", "root")
     password = os.getenv("PERSONAL_DATA_DB_PASSWORD", "")
     host = os.getenv("PERSONAL_DATA_DB_HOST", "localhost")
-    database = os.getenv("PERSONAL_DATA_DB_NAME")
+    database = os.getenv("PERSONAL_DATA_DB_NAME", "")
 
     try:
         return mysql.connector.connect(
             user=username,
             password=password,
             host=host,
+            port=3306 
             database=database
         )
     except Error:
@@ -122,32 +123,29 @@ def main() -> None:
 
     db = get_db()
 
-    if db:
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM users")
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM users")
 
-        # Get column names
-        headers = ([i[0] for i in cursor.description]
-                   if cursor.description else [])
-        rows = cursor.fetchall()
-        for row in rows:
-            # message = format_row(row, headers)
-            # Casting row elements to string
-            message = format_row(
-                tuple(
-                    str(value) if value is not None else "" for value in row),
-                headers)
+    # Get column names
+    headers = ([i[0] for i in cursor.description]
+               if cursor.description else [])
+    rows = cursor.fetchall()
+    for row in rows:
+        # message = format_row(row, headers)
+        # Casting row elements to string
+        message = format_row(
+            tuple(
+                str(value) if value is not None else "" for value in row),
+            headers)
 
-            # log_record = logging.LogRecord(
-            #     "user_data", logging.INFO, int, int, message, None, None)
-            log_record = logging.LogRecord(
-                "user_data", logging.INFO, __file__, 0, message, None, None)
-            logger.handle(log_record)
+        # log_record = logging.LogRecord(
+        #     "user_data", logging.INFO, int, int, message, None, None)
+        log_record = logging.LogRecord(
+            "user_data", logging.INFO, __file__, 0, message, None, None)
+        logger.handle(log_record)
 
-        cursor.close()
-        db.close()
-
-    return
+    cursor.close()
+    db.close()
 
 
 if __name__ == "__main__":
