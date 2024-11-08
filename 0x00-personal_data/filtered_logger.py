@@ -5,7 +5,7 @@
 import os
 import logging
 import re
-from typing import List, Tuple, Union, Any
+from typing import List, Tuple
 from datetime import datetime
 import mysql.connector
 from mysql.connector.connection import MySQLConnection
@@ -70,7 +70,7 @@ def get_logger() -> logging.Logger:
     return logger
 
 
-def get_db() -> Union[MySQLConnection, MySQLConnectionAbstract]:
+def get_db() -> MySQLConnection:
     """
     Connects to the MySQL database using credentials from environment variables
     and returns the MySQLConnection object.
