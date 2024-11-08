@@ -3,12 +3,13 @@
 """Filtered logger module."""
 
 import os
+import sys
 import logging
 import re
 from typing import List, Tuple
 from datetime import datetime
 import mysql.connector
-from mysql.connector.connection import MySQLConnection
+from mysql.connector.connection import MySQLConnection, Error
 from mysql.connector.connection import MySQLConnectionAbstract
 
 
@@ -83,12 +84,15 @@ def get_db() -> MySQLConnection:
     host = os.getenv("PERSONAL_DATA_DB_HOST", "localhost")
     database = os.getenv("PERSONAL_DATA_DB_NAME")
 
-    return mysql.connector.connect(
-        user=username,
-        password=password,
-        host=host,
-        database=database
-    )
+    try:
+        return mysql.connector.connect(
+            user=username,
+            password=password,
+            host=host,
+            database=database
+        )
+    except Error:
+        sys.exit(1)
 
 
 def format_row(row: Tuple[str, ...], headers: List[str]) -> str:
@@ -117,28 +121,33 @@ def main() -> None:
     logger = get_logger()
 
     db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM users")
 
-    # Get column names
-    headers = [i[0] for i in cursor.description] if cursor.description else []
-    rows = cursor.fetchall()
-    for row in rows:
-        #         message = format_row(row, headers)
-        # Casting row elements to string
-        message = format_row(
-            tuple(str(value) if value is not None else "" for value in row),
-            headers)
+    if db:
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM users")
 
-#         log_record = logging.LogRecord(
-#             "user_data", logging.INFO, int, int, message, None, None
-#         )
-        log_record = logging.LogRecord(
-            "user_data", logging.INFO, __file__, 0, message, None, None)
-        logger.handle(log_record)
+        # Get column names
+        headers = ([i[0] for i in cursor.description]
+                   if cursor.description else [])
+        rows = cursor.fetchall()
+        for row in rows:
+            # message = format_row(row, headers)
+            # Casting row elements to string
+            message = format_row(
+                tuple(
+                    str(value) if value is not None else "" for value in row),
+                headers)
 
-    cursor.close()
-    db.close()
+            # log_record = logging.LogRecord(
+            #     "user_data", logging.INFO, int, int, message, None, None)
+            log_record = logging.LogRecord(
+                "user_data", logging.INFO, __file__, 0, message, None, None)
+            logger.handle(log_record)
+
+        cursor.close()
+        db.close()
+
+    return
 
 
 if __name__ == "__main__":
