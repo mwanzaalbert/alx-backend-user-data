@@ -9,7 +9,7 @@ import re
 from typing import List, Tuple
 from datetime import datetime
 import mysql.connector
-from mysql.connector.connection import MySQLConnection
+from mysql.connector.connection import MySQLConnection, Error
 
 # Define the fields that are considered PII
 PII_FIELDS = ("name", "email", "phone", "ssn", "password")
@@ -82,13 +82,15 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
     host = os.getenv("PERSONAL_DATA_DB_HOST", "localhost")
     database = os.getenv("PERSONAL_DATA_DB_NAME", "")
 
-    return mysql.connector.connect(
-            user=username,
-            password=password,
-            host=host,
-            port=3306,
-            database=database
-        )
+    try:
+        return mysql.connector.connect(
+                user=username,
+                password=password,
+                host=host,
+                database=database
+            )
+    except Error:
+        sys.exit(1)
 
 
 def format_row(row: Tuple[str, ...], headers: List[str]) -> str:
@@ -118,29 +120,30 @@ def main() -> None:
 
     db = get_db()
 
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM users")
+    if db:
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM users")
 
-    # Get column names
-    headers = ([i[0] for i in cursor.description]
-               if cursor.description else [])
-    rows = cursor.fetchall()
-    for row in rows:
-        # message = format_row(row, headers)
-        # Casting row elements to string
-        message = format_row(
-            tuple(
-                str(value) if value is not None else "" for value in row),
-            headers)
+        # Get column names
+        headers = ([i[0] for i in cursor.description]
+                   if cursor.description else [])
+        rows = cursor.fetchall()
+        for row in rows:
+            # message = format_row(row, headers)
+            # Casting row elements to string
+            message = format_row(
+                tuple(
+                    str(value) if value is not None else "" for value in row),
+                headers)
 
-        # log_record = logging.LogRecord(
-        #     "user_data", logging.INFO, int, int, message, None, None)
-        log_record = logging.LogRecord(
-            "user_data", logging.INFO, __file__, 0, message, None, None)
-        logger.handle(log_record)
+            # log_record = logging.LogRecord(
+            #     "user_data", logging.INFO, int, int, message, None, None)
+            log_record = logging.LogRecord(
+                "user_data", logging.INFO, __file__, 0, message, None, None)
+            logger.handle(log_record)
 
-    cursor.close()
-    db.close()
+        cursor.close()
+        db.close()
 
 
 if __name__ == "__main__":
