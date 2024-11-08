@@ -3,14 +3,11 @@
 """Filtered logger module."""
 
 import os
-import sys
 import logging
 import re
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from datetime import datetime
-import mysql.connector
-from mysql.connector.connection import MySQLConnection, Error
-from mysql.connector.connection import MySQLConnectionAbstract
+import MySQLdb
 
 
 # Define the fields that are considered PII
@@ -19,9 +16,20 @@ PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 def filter_datum(fields: List[str], redaction: str, message: str,
                  separator: str) -> str:
-    """Replaces occurrences of fields in a msg with the redaction string."""
+    """
+    Replaces occurrences of fields in a message with the redaction string.
+
+    Args:
+        fields (List[str]): A list representing field names to redact.
+        redaction (str): The string to replace sensitive information with.
+        message (str): The original message containing sensitive information.
+        separator (str): The character separating fields in the message.
+
+    Returns:
+        str: The redacted message.
+    """
     # pylint: disable=unused-argument
-    pattern = f"({'|'.join(fields)})=([^{separator}]+)"
+    pattern = f"({'|'.join(fields)})=([^;]+)"
     return re.sub(pattern, lambda m: f"{m.group(1)}={redaction}", message)
 
 
@@ -71,7 +79,7 @@ def get_logger() -> logging.Logger:
     return logger
 
 
-def get_db() -> MySQLConnection:
+def get_db():
     """
     Connects to the MySQL database using credentials from environment variables
     and returns the MySQLConnection object.
@@ -80,17 +88,16 @@ def get_db() -> MySQLConnection:
         MySQLConnection: The connection to the MySQL database.
     """
     username = os.getenv("PERSONAL_DATA_DB_USERNAME", "root")
-    password = os.getenv("PERSONAL_DATA_DB_PASSWORD", "")
+    password = os.getenv("PERSONAL_DATA_DB_PASSWORD", "root")
     host = os.getenv("PERSONAL_DATA_DB_HOST", "localhost")
-    database = os.getenv("PERSONAL_DATA_DB_NAME", "")
+    database = os.getenv("PERSONAL_DATA_DB_NAME", "my_db")
 
-    return mysql.connector.connect(
-            user=username,
-            password=password,
-            host=host,
-            port=3306,
-            database=database
-        )
+    return MySQLdb.connect(
+        user=username,
+        password=password,
+        host=host,
+        database=database
+    )
 
 
 def format_row(row: Tuple[str, ...], headers: List[str]) -> str:
@@ -119,26 +126,20 @@ def main() -> None:
     logger = get_logger()
 
     db = get_db()
-
     cursor = db.cursor()
     cursor.execute("SELECT * FROM users")
 
-    # Get column names
-    headers = ([i[0] for i in cursor.description]
-               if cursor.description else [])
+    headers = [i[0] for i in cursor.description] if cursor.description else []  # Get column names
     rows = cursor.fetchall()
     for row in rows:
-        # message = format_row(row, headers)
+#         message = format_row(row, headers)
         # Casting row elements to string
-        message = format_row(
-            tuple(
-                str(value) if value is not None else "" for value in row),
-            headers)
-
-        # log_record = logging.LogRecord(
-        #     "user_data", logging.INFO, int, int, message, None, None)
-        log_record = logging.LogRecord(
-            "user_data", logging.INFO, __file__, 0, message, None, None)
+        message = format_row(tuple(str(value) if value is not None else "" for value in row), headers)
+    
+#         log_record = logging.LogRecord(
+#             "user_data", logging.INFO, int, int, message, None, None
+#         )
+        log_record = logging.LogRecord("user_data", logging.INFO, __file__, 0, message, None, None)
         logger.handle(log_record)
 
     cursor.close()
@@ -147,3 +148,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
