@@ -9,9 +9,7 @@ import re
 from typing import List, Tuple
 from datetime import datetime
 import mysql.connector
-from mysql.connector.connection import MySQLConnection, Error
-from mysql.connector.connection import MySQLConnectionAbstract
-
+from mysql.connector.connection import MySQLConnection
 
 # Define the fields that are considered PII
 PII_FIELDS = ("name", "email", "phone", "ssn", "password")
@@ -71,7 +69,7 @@ def get_logger() -> logging.Logger:
     return logger
 
 
-def get_db() -> MySQLConnection:
+def get_db() -> mysql.connector.connection.MySQLConnection:
     """
     Connects to the MySQL database using credentials from environment variables
     and returns the MySQLConnection object.
